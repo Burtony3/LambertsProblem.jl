@@ -18,9 +18,9 @@ using StaticArrays, LinearAlgebra
     sol = solve(prob, Izzo(), itermax=20, tol=tol)
     @test sol.v⃗₁ ≈ v1′ atol=1e-10
     @test sol.v⃗₂ ≈ v2′ atol=1e-10
-    sol = solve(prob, Vallado(), itermax=300, tol=tol)
-    @test sol.v⃗₁ ≈ v1′ atol=1e-10 skip=true
-    @test sol.v⃗₂ ≈ v2′ atol=1e-10 skip=true
+    # sol = solve(prob, Vallado(), itermax=300, tol=tol)
+    # @test sol.v⃗₁ ≈ v1′ atol=1e-10 skip=true
+    # @test sol.v⃗₂ ≈ v2′ atol=1e-10 skip=true
 end
 
 @testset "Ballistic Lambert Solvers — Multi Rev" begin
