@@ -3,6 +3,8 @@
 
 function solve(prob::BallisticLambertsProblem{T}, ::Vallado; itermax::Int=30, tol::Float64=1e-12) where T<:Real
 
+    @warn "Vallado solver is not fully implemented!"
+
     # Checking inputs
     @assert prob.revs == 0 "Vallado solver is a zero-revolution solver only"
 
