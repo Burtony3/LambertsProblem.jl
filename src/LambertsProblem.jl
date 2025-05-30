@@ -5,6 +5,7 @@ using LinearAlgebra, StaticArrays
 
 # Definitions
 include("types.jl")
+include("utils.jl")
 
 # Solvers
 include("algorithms/ballistic/izzo.jl")
