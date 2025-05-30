@@ -1,9 +1,24 @@
 # LambertsProblem
 
+
+<div align="center">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" 
+        srcset="icon.svg" >
+      <img alt="" 
+        src="icon.svg" height="150">
+    </picture>
+</div>
+
+
+<div align="center">
+
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://burtony3.github.io/LambertsProblem.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://burtony3.github.io/LambertsProblem.jl/dev/)
 [![Build Status](https://github.com/burtony3/LambertsProblem.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/burtony3/LambertsProblem.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/burtony3/LambertsProblem.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/burtony3/LambertsProblem.jl)
+
+</div>
 
 A Julia package providing a variety of algorithms to set up and solve the orbital mechanics Lambert problem.
 
@@ -65,6 +80,7 @@ sol.Δtₑ          # time-of-flight error from requested
 
 ## Solvers
 
+* **Minimum Energy**: Analytic minimum energy solver
 * **Izzo**: Fast general-purpose, multi-rev solver
 * **Vallado**: Classical zero-rev solver
 * **Russell**: Alternative multi-rev solver

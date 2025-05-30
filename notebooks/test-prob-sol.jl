@@ -6,7 +6,7 @@ using StaticArrays, LinearAlgebra
 r1  = SA[1.0, 0.0, 0.0]
 r2  = SA[2.0*cosd(135), 2.0*sind(135), 0]
 μ   = 1.0
-tof = 2π
+tof = 3π
 
 # Creating Problem
 prob = BallisticLambertsProblem(r1, r2, tof, μ, revs=0)
@@ -41,3 +41,64 @@ sol2 = solve(prob, Izzo(), tol=1e-14)
 sol.v⃗₁ - sol2.v⃗₁
 sol.v⃗₂ - sol2.v⃗₂
 
+# =====================================================================
+# === Plotting
+
+using CairoMakie
+
+# Getting values to plot
+r1  = SA[1.0, 0.0, 0.0]
+θ   = 135.0
+r2  = SA[2.0*cosd(θ), 2.0*sind(θ), 0]
+μ   = 1.0
+tof = 0.5π
+
+# Solving minimum energy problem
+prob = MinimumEnergyLambertsProblem(r1, r2, μ)
+sol_le  = solve(prob)
+prob = MinimumEnergyLambertsProblem(r1, r2, μ, revs=1)
+sol_ler  = solve(prob)
+
+# Solving fixed-tof lambert
+prob = BallisticLambertsProblem(r1, r2, tof, μ, longway=false)
+sol_b = solve(prob, Izzo())
+prob = BallisticLambertsProblem(r1, r2, 8π, μ, revs=1, longway=false)
+sol_br = solve(prob, Izzo())
+prob = BallisticLambertsProblem(r1, r2, 8π, μ, revs=1, longway=true)
+sol_brl = solve(prob, Izzo())
+prob = BallisticLambertsProblem(r1, r2, sol_le.Δt, μ)
+sol_ble = solve(prob, Izzo())
+
+# Creating plotting function
+function plot_sol!(ax, sol; kwargs...)
+    # Finding if hyperbolic solution$
+    r, v = norm(sol.r⃗₁), norm(sol.v⃗₁)
+    ε    = (0.5*v^2 - sol.μ/r)
+
+    # Getting points
+    tspan = LinRange(0.0, sol.Δt, 100 + 100*sol.revs)
+    if ε < 0.0
+        X = [LambertsProblem._propKepTE(sol.r⃗₁, sol.v⃗₁, t, sol.μ)[1] for t in tspan]
+    else
+        X = [LambertsProblem._propKepTH(sol.r⃗₁, sol.v⃗₁, t, sol.μ)[1] for t in tspan]
+    end
+
+    # Plotting
+    lines!(ax, [x[1] for x in X], [x[2] for x in X]; kwargs...)
+end
+
+# Plotting
+begin
+    fig = Figure()
+    ax  = Axis(fig[1, 1], aspect=DataAspect())
+
+    # Plotting 
+    plot_sol!(ax, sol_le)
+    # plot_sol!(ax, sol_ler)
+    plot_sol!(ax, sol_b)
+    plot_sol!(ax, sol_br)
+    plot_sol!(ax, sol_brl)
+    plot_sol!(ax, sol_ble, linestyle=:dash)
+
+    fig
+end
