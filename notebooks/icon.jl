@@ -59,6 +59,8 @@ begin
         Point2f[(R*cos(θ), R*sin(θ)) for θ in θ⃗],
         color = :dimgray, strokecolor = :black, strokewidth=3
     )
+    # Label(fig[1, 2:10], "LambertsProblem.jl", fontsize=10, color=:white, 
+        # justification=:left, width=3)
 
     fig
 end
