@@ -3,6 +3,16 @@
 
 export solve
 
+"""
+    solve(prob::BallisticLambertsProblem{T}, solver::Izzo; itermax::Int=30, tol::Float64=1e-12) where T<:Real
+
+Solve the given ballistic Lambert problem using Izzo’s algorithm and return a `BallisticLambertsSolution`.
+
+Takes a `BallisticLambertsProblem{T}` instance `prob`, which specifies initial/final position vectors, time of flight `Δt`, gravitational parameter `μ`, and optional revolution or arc flags, and computes departure/arrival velocities via Izzo’s universal‐variable formulation.
+
+- `itermax`: maximum number of Householder iterations (default: 30).  
+- `tol`: convergence tolerance for the root‐finding (default: 1e-12).
+"""
 function solve(prob::BallisticLambertsProblem{T}, ::Izzo; itermax::Int=30, tol::Float64=1e-12) where T<:Real
 
     # Getting solution
@@ -21,6 +31,26 @@ end
 # === New Izzo Solver
 
 # file:///Users/biii/Downloads/MScThesis_BrunoCorreia_69807.pdf
+"""
+    _izzo(
+        r⃗1::SVector{3,<:Real},
+        r⃗2::SVector{3,<:Real},
+        tof::Real,
+        μ::Real,
+        revs::Int,
+        retrograde::Bool,
+        longway::Bool,
+        maxiters::Int,
+        tol::Real
+    )
+
+Compute the initial and final velocity vectors for a ballistic Lambert transfer via Izzo’s universal‐variable algorithm.
+
+Given initial/final position vectors `r⃗1`, `r⃗2`, time of flight `tof`, gravitational parameter `μ`, allowed revolutions `revs`, and boolean flags `retrograde` and `longway`, iteratively solve for the non‐dimensional parameter `x` using Householder’s method. Returns a 4‐tuple `(r⃗1, v⃗1, r⃗2, v⃗2)`, where `v⃗1` and `v⃗2` are the departure and arrival velocity vectors in Cartesian coordinates.
+
+- `maxiters`: maximum allowed iterations for convergence.  
+- `tol`: tolerance for change in `x` (default: 1e-12).
+"""
 function _izzo(
     r⃗1::SVector{3, <:Real}, 
     r⃗2::SVector{3, <:Real}, 
@@ -34,25 +64,15 @@ function _izzo(
     )
 
     # Non-dimensionalizing
-    # LU = norm(r⃗1);   r⃗1  = r⃗1/LU;   r1 = 1.0 # By definition
-    # VU = sqrt(μ/LU); r⃗2  = r⃗2/LU;   r2 = norm(r⃗2)
-    # TU = LU/VU;      tof = tof/TU
     r1 = norm(r⃗1)
     r2 = norm(r⃗2)
     
     # Finding transfer angle
     h⃗  = r⃗1×r⃗2; ĥ = h⃗/norm(h⃗)   # Orbit plane normal vector
-    # δν = atan(norm(h⃗), r⃗1⋅r⃗2) # Interior transfer angle
-
-    # # Handling angle definition
-    # cond = retrograde ? h⃗[3]>0 : h⃗[3]<0 # Updating condition based on motion
-    # δν   = cond ? 2π - δν : δν          # Converting to outside angle on condition
 
     # Finding useful constants
-    # c  = sqrt(r1^2 + r2^2 - 2*r1*r2*cos(δν)); # non-dimensional chord (law of cosines)
     c  = norm(r⃗2 - r⃗1);                       # non-dimensional chord (law of cosines)
-    s  = (r1 + r2 + c)/2;                     # non-dimensional semi-perimeter
-    # aₘ = s/2;                                 # minimum energy ellipse semi major axis()      
+    s  = (r1 + r2 + c)/2;                     # non-dimensional semi-perimeter   
     λ  = sqrt(1 - min(1.0, c/s))     
     λ  = h⃗[3]<0 ? -λ : λ
 
@@ -106,6 +126,13 @@ function _izzo(
 end
 
 
+"""
+    _izzo_update(x::Real, λ::Real, T::Real, revs::Int) -> Real
+
+Perform one Householder‐third‐order update step for Izzo’s root‐finding algorithm.
+
+Given the current iterate `x`, parameter `λ`, non‐dimensional time `T`, and revolution count `revs`, compute and return the increment `δx = -f*(f′^2 - 0.5*f*f″)/(f′^3 - f*f′*f″ + ⅙*f‴*f^2)`, where `f`, `f′`, `f″`, and `f‴` are evaluated at `x`.
+"""
 function _izzo_update(x::Real, λ::Real, T::Real, revs::Int)
 
     # Getting constants w.r.t. x
@@ -125,6 +152,13 @@ function _izzo_update(x::Real, λ::Real, T::Real, revs::Int)
 end
 
 
+"""
+    _izzo_root(x::Real, λ::Real, T::Real, revs::Int, y::Real, ψ::Real) -> Real
+
+Evaluate Izzo’s time‐of‐flight residual for a given parameter `x`.
+
+Returns the difference between the computed time of flight and the target `T` for use in root‐finding.
+"""
 function _izzo_root(
     x::Real, λ::Real, T::Real, 
     revs::Int,
@@ -134,6 +168,13 @@ function _izzo_root(
 end
 
 
+"""
+    _izzo_root′(x::Real, λ::Real, T::Real, revs::Int, y::Real, ψ::Real, f::Real) -> Real
+
+Compute the first derivative of Izzo’s time‐of‐flight residual with respect to `x`.
+
+Given the current residual value `f`, return its derivative at the current iterate.
+"""
 function _izzo_root′(
     x::Real, λ::Real, T::Real, 
     revs::Int,
@@ -143,6 +184,13 @@ function _izzo_root′(
 end
 
 
+"""
+    _izzo_root″(x::Real, λ::Real, T::Real, revs::Int, y::Real, ψ::Real, f::Real, f′::Real) -> Real
+
+Compute the second derivative of Izzo’s time‐of‐flight residual with respect to `x`.
+
+Given the residual `f` and its first derivative `f′`, return the second derivative at the current iterate.
+"""
 function _izzo_root″(
     x::Real, λ::Real, T::Real, 
     revs::Int,
@@ -152,6 +200,13 @@ function _izzo_root″(
 end
 
 
+"""
+    _izzo_root‴(x::Real, λ::Real, T::Real, revs::Int, y::Real, ψ::Real, f::Real, f′::Real, f″::Real) -> Real
+
+Compute the third derivative of Izzo’s time‐of‐flight residual with respect to `x`.
+
+Given the residual `f` and its first and second derivatives (`f′`, `f″`), return the third derivative at the current iterate.
+"""
 function _izzo_root‴(
     x::Real, λ::Real, T::Real, 
     revs::Int,
@@ -161,6 +216,13 @@ function _izzo_root‴(
 end
 
 
+"""
+    _izzo_ψ(x::Real, y::Real, λ::Real) -> Real
+
+Compute the auxiliary angle parameter `ψ` used in Izzo’s Lambert algorithm.
+
+Handles elliptic, hyperbolic, and parabolic cases based on the values of `x`, `y`, and `λ`.
+"""
 function _izzo_ψ(x::Real, y::Real, λ::Real)::Real
 
     # Elliptic case
@@ -181,11 +243,23 @@ function _izzo_ψ(x::Real, y::Real, λ::Real)::Real
 end
 
 
+"""
+    _izzo_y(x::Real, λ::Real) -> Real
+
+Compute the auxiliary parameter `y` for Izzo’s Lambert algorithm from `x` and `λ`.
+"""
 function _izzo_y(x::Real, λ::Real)::Real
     return sqrt( 1 - λ^2*(1-x^2))
 end
 
 
+"""
+    _izzo_ic(T::Real, λ::Real, revs::Int, longway::Bool) -> Real
+
+Generate an initial guess `x₀` for Izzo’s iteration based on non‐dimensional time `T`, parameter `λ`, revolution count `revs`, and `longway` flag.
+
+Chooses a starting value to accelerate convergence under single or multiple revolution scenarios.
+"""
 function _izzo_ic(T::Real, λ::Real, revs::Int, longway::Bool)::Real
 
     # Single rev case
@@ -216,6 +290,23 @@ end
 # =====================================================================
 # === Original Izzo Solver
 
+"""
+    _izzo2(
+        r⃗1::SVector{3,<:Real},
+        r⃗2::SVector{3,<:Real},
+        tof::Real,
+        μ::Real;
+        retrograde::Bool=false,
+        outside::Bool=false,
+        revs::Int=0,
+        iterMax::Int=100,
+        tol::Real=1e-12
+    )
+
+Legacy implementation of Izzo’s Lambert solver using a normalized Newton‐Raphson scheme.
+
+Given initial/final position vectors `r⃗1`, `r⃗2`, time of flight `tof`, and gravitational parameter `μ`, optionally specify `retrograde` (to force a retrograde trajectory), `outside` (for alternate initial guesses), `revs` (revolutions), `iterMax` (maximum iterations), and `tol` (root‐finding tolerance). Returns the departure and arrival velocity vectors.
+"""
 function _izzo2(
     r⃗1::SVector{3, <:Real}, 
     # v⃗1::SVector{3, <:Real}, 

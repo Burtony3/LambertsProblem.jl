@@ -1,3 +1,13 @@
+"""
+    _propKepTE(r⃗::T, v⃗::T, Δt::Real, μ::Float64; itermax::Int=30, tol::Float64=1e-12)
+
+Propagates an initial state (position `r⃗` and velocity `v⃗`) over a time interval `Δt` under Keplerian two-body motion (elliptic or parabolic).
+
+Solves for the change in eccentric anomaly ΔE using Halley’s method to satisfy Kepler’s time‐of‐flight equation. Computes and returns the propagated position `r⃗ₖ` and velocity `v⃗ₖ` around a central body with gravitational parameter `μ`. Iteration proceeds until the change in ΔE is less than `tol` or until `itermax` iterations are performed.
+
+- `itermax`: maximum number of Halley iterations (default: 30).  
+- `tol`: convergence tolerance for ΔE (default: 1e-12).
+"""
 function _propKepTE(r⃗::T, v⃗::T, Δt::Real, μ::Float64; itermax::Int=30, tol::Float64=1e-12)::Tuple{T, T} where T<:SVector
 
     # Defining Constants
@@ -47,6 +57,17 @@ function _propKepTE(r⃗::T, v⃗::T, Δt::Real, μ::Float64; itermax::Int=30, t
     return r⃗ₖ, v⃗ₖ
 end
 
+
+"""
+    _propKepTH(r⃗::T, v⃗::T, Δt::Real, μ::Float64; itermax::Int=30, tol::Float64=1e-12)
+
+Propagates an initial state (position `r⃗` and velocity `v⃗`) over a time interval `Δt` under Keplerian hyperbolic motion.
+
+Solves for the change in hyperbolic anomaly ΔH using Halley’s method to satisfy Kepler’s hyperbolic time‐of‐flight equation. Computes and returns the propagated position `r⃗ₖ` and velocity `v⃗ₖ` around a central body with gravitational parameter `μ`. Iteration proceeds until the change in ΔH is less than `tol` or until `itermax` iterations are performed.
+
+- `itermax`: maximum number of Halley iterations (default: 30).  
+- `tol`: convergence tolerance for ΔH (default: 1e-12).
+"""
 function _propKepTH(r⃗::T, v⃗::T, Δt::Real, μ::Float64; itermax::Int=30, tol::Float64=1e-12)::Tuple{T, T} where T<:SVector
 
     # Defining Constants

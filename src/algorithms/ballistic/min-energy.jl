@@ -1,6 +1,13 @@
 # =====================================================================
 # === Hooking into interfaces
 
+"""
+    solve(prob::MinimumEnergyLambertsProblem{T}) where T<:Real
+
+Solve a minimum‐energy Lambert problem and return a `MinimumEnergyLambertsSolution`.
+
+Takes a `MinimumEnergyLambertsProblem` instance `prob`, which specifies initial and final position vectors, gravitational parameter, and optional revolution or long‐arc flags, and computes the optimal transfer that minimizes energy.
+"""
 function solve(prob::MinimumEnergyLambertsProblem{T}) where T<:Real
 
     # Getting solution
@@ -15,6 +22,13 @@ end
 # =====================================================================
 # === Solver
 
+"""
+    _min_energy(r⃗1::SVector{3,<:Real}, r⃗2::SVector{3,<:Real}, μ::Real, revs::Int, retrograde::Bool)
+
+Compute the minimum‐energy transfer between two 3D position vectors under gravitational parameter `μ`.
+
+Returns a tuple `(Δt, r⃗1, v⃗1, r⃗2, v⃗2)`, where `Δt` is the time of flight, and `v⃗1`, `v⃗2` are the departure and arrival velocity vectors. If `revs > 0`, multiple revolutions are allowed, and setting `retrograde=true` forces a retrograde trajectory.
+"""
 function _min_energy(
     r⃗1::SVector{3, <:Real}, 
     r⃗2::SVector{3, <:Real}, 
@@ -58,45 +72,3 @@ function _min_energy(
     return Δt, r⃗1, v⃗1, r⃗2, v⃗2
 
 end
-
-
-
-#=
-if nargin < 5; shortlong = -1; end
-scalarFlag = length(r1vec) == 1;
-
-if ~scalarFlag
-    r1 = norm(r1vec);
-    r2 = norm(r2vec);
-    r1dr2 = dot(r1vec, r2vec);
-    dnu = atan2d(norm(cross(r1vec, r2vec)), dot(r1vec, r2v2c));
-else
-    r1 = r1vec;
-    r2 = r2vec;
-    r1dr2 = r1*r2*cosd(dnu);
-end
-
-% PAPER WAY
-% pmin = ( (r1*r2)/sqrt(r1^2 + r2^2 - 2*r1dr2) )*(1 - cosd(dnu));
-% 
-% v1 = ( sqrt(mu*pmin)/(r1*r2*sind(dnu)) )*( r2vec - (1 - (r2/pmin)*(1 - cosd(dnu)))*r1vec );
-% 
-% amin = -0.5*mu / (0.5*norm(v1)^2 - mu/r1)
-% 
-% emin = sqrt(1 - pmin/amin)
-
-% VALLADO
-c = sqrt(r1^2 + r2^2 - 2*r1dr2);
-s = 0.5*(r1 + r2 + c);
-amin = s/2;
-pmin = ((r1*r2)/c)*(1 - cosd(dnu));
-emin = sqrt( 1 - 2*pmin/s );
-
-beta = 2*asin(sqrt((s - c)/s));
-
-tof = sqrt(amin^3 / mu)*(pi + shortlong*(beta - sin(beta)));
-
-v1 = ( sqrt(mu*pmin)/(r1*r2*sind(dnu)) )*( r2vec - (1 - (r2/pmin)*(1 - cosd(dnu)))*r1vec );
-
-lam = struct('v1', v1, 'amin', amin, 'pmin', pmin, 'emin', emin, 'tof', tof);
-=#
