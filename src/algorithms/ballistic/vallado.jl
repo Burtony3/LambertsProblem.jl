@@ -30,39 +30,47 @@ function _vallado(
     tof::Real, 
     μ::Real,
     retrograde::Bool,
+    # longway::Bool,
     maxiter::Int,
     tol::Real
     )
 	
-	# HANDLING INPUTS
+	# Handling inputs
 	rᵢ = norm(r⃗ᵢ)
 	rⱼ = norm(r⃗ⱼ)
 
-	# FINDING POSITIONAL ANGLES
-	δν = atand(r⃗ⱼ[2], r⃗ⱼ[1]) - atand(r⃗ᵢ[2], r⃗ᵢ[1])
-	dir = retrograde ? -sign(δν) : sign(δν)
+	# Finding useful constants
+	δν = (retrograde ? -1 : 1)*acos( r⃗ᵢ⋅r⃗ⱼ / rᵢ / rⱼ )
+    A  = (δν > π ? 1 : -1)*sqrt( (rᵢ*rⱼ)/(1+cos(δν)) )#*sin(δν)
 
-	# ETC
-	cδν = r⃗ᵢ⋅r⃗ⱼ / (rᵢ*rⱼ)
-	A = dir*√(rᵢ*rⱼ*(1 + cδν))
-	ψₗ, ψᵤ   = -1.5, 1.5
-    fψₗ, fψᵤ = vallado_root(ψₗ, rᵢ, rⱼ, A, μ, tof)[1], vallado_root(ψᵤ, rᵢ, rⱼ, A, μ, tof)[2]
-    ψ̅ = 0.0
+	# Root-solving universal variable
+	ψₗ, ψᵤ = -4π, 4*(π^2)
+    ψ̅      = 0.0
 	for k in 1:maxiter
         # Finding midpoint
         ψ̅  = 0.5*( ψₗ + ψᵤ )
-        fψ̅ = vallado_root(ψ̅, rᵢ, rⱼ, A, μ, tof)[1]
+        # fψ̅ = _vallado_root(ψ̅, rᵢ, rⱼ, A, μ, tof)
+        c2, c3 = _c2c3(ψ̅)
+        y = _y(ψ̅, c2, c3, A, rᵢ, rⱼ)
 
-        # Branching
-        if abs(fψ̅) < tol
+        
+        if y < 0
+            @warn "Lower bound too low, raising" A y
+            ψₗ = (ψ̅ + 3*ψₗ)/4
+            continue
+        end
+        x      = sqrt(y/c2)
+        tof′   = (x^3 * c3 + A*sqrt(y))/sqrt(μ)
+
+        if abs(tof′ - tof) < tol
             break
-        elseif sign(fψ̅) == sign(fψᵤ)
-            ψᵤ, fψᵤ = ψ̅, fψ̅
-        elseif sign(fψ̅) == sign(fψₗ)
-            ψₗ, fψₗ = ψ̅, fψ̅
+        elseif tof′ < tof
+            ψₗ = ψ̅
+        else
+            ψᵤ = ψ̅
         end
     end
-	y, δtᵢ = vallado_root(ψ̅, rᵢ, rⱼ, A, μ, tof)[2:end]
+	y = _y(ψ̅, _c2c3(ψ̅)..., A, rᵢ, rⱼ)
 
 	# f & g FUNCTIONS
 	f = 1 - y/rᵢ
@@ -80,15 +88,32 @@ end
 # =====================================================================
 # === Assist Functions
 
-function c2c3(ψ)
-	if ψ > 1e-6
-		c2 = (1.0 - cos(√ψ))/ψ
-		c3 = (√ψ - sin(√ψ))/√(ψ^3)
-		
-	elseif ψ < -1e-6
-		c2 = (1.0 - cosh(√(-ψ)))/ψ
-		c3 = (sinh(√(-ψ)) - √(-ψ))/√(-ψ^3)
+function _vallado_root(ψ, rᵢ, rⱼ, A, μ, tof)
+    c2, c3 = _c2c3(ψ)
+    y      = _y(ψ, c2, c3, A, rᵢ, rⱼ)
+    x      = sqrt(y/c2)
+    tof′   = (x^3 * c3 + A*sqrt(y))/sqrt(μ)
 
+    return tof′ - tof
+end
+
+function _y(ψ, c2, c3, A, rᵢ, rⱼ)
+    # @info ψ c2 c3 A
+    return rᵢ + rⱼ + ((A*(ψ*c3 - 1))/sqrt(c2))
+end
+
+function _c2c3(ψ)
+    # Elliptical case
+	if ψ > 1e-6
+		c2 = (1.0 - cos(sqrt(ψ)))/ψ
+		c3 = (sqrt(ψ) - sin(sqrt(ψ)))/sqrt(ψ^3)
+		
+    # Hyperbolic case
+	elseif ψ < -1e-6
+		c2 = (1.0 - cosh(sqrt(-ψ)))/ψ
+		c3 = (sinh(sqrt(-ψ)) - sqrt(-ψ))/sqrt(-ψ^3)
+
+    # Parabolic case
 	else
 		c2 = 1/2
 		c3 = 1/6
@@ -98,10 +123,8 @@ function c2c3(ψ)
 	return c2, c3
 end
 
-function vallado_root(ψ, rᵢ, rⱼ, A, μ, tof)
-	c2, c3 = c2c3(ψ)
-	y = rᵢ + rⱼ + ((A*(ψ*c3 - 1))/√(c2))
-	Xᵢ = √(y/c2)
-	δtᵢ = (Xᵢ^3 * c3 + A*√(y))/√(μ)
-	return δtᵢ - tof, y, δtᵢ
-end
+# function vallado_root(, tof)
+# 	Xᵢ = √(y/c2)
+# 	δtᵢ = 
+# 	return δtᵢ - tof, y, δtᵢ
+# end

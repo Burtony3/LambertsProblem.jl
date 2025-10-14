@@ -4,9 +4,9 @@
 <div align="center">
     <picture>
       <source media="(prefers-color-scheme: dark)" 
-        srcset="assets/icon.svg" >
+        srcset="assets/logo.svg" >
       <img alt="" 
-        src="assets/icon.svg" height="150">
+        src="assets/logo.svg" height="350">
     </picture>
 </div>
 

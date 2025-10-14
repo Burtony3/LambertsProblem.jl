@@ -2,6 +2,20 @@ using LambertsProblem
 using Test
 using StaticArrays, LinearAlgebra
 
+@testset "Minimum Energy Lambert Solvers" begin
+    # Input variables
+    r1  = SA[1.0, 0.0, 0.0]
+    r2  = SA[2.0*cosd(135), 2.0*sind(135), 0]
+    μ   = 1.0
+    prob = MinimumEnergyLambertsProblem(r1, r2, μ)
+
+    # Testing that end points match keplerian motion
+    sol = solve(prob)
+    r2′, v2′ = LambertsProblem._propKepTE(r1, sol.v⃗₁, sol.Δt, μ)
+    @test r2 ≈ r2′ atol=1e-10
+    @test sol.v⃗₂ ≈ v2′ atol=1e-10
+end
+
 @testset "Ballistic Lambert Solvers — Zero Rev" begin
     # Input variables
     r1  = SA[1.0, 0.0, 0.0]
@@ -22,6 +36,7 @@ using StaticArrays, LinearAlgebra
     # @test sol.v⃗₁ ≈ v1′ atol=1e-10 skip=true
     # @test sol.v⃗₂ ≈ v2′ atol=1e-10 skip=true
 end
+
 
 @testset "Ballistic Lambert Solvers — Multi Rev" begin
     # Input variables

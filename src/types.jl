@@ -215,6 +215,8 @@ end
 # Impulsive Solution
 # struct ImpulsiveLambertsSolution{T<:Real} <: AbstractLambertsSolution
 # end
+import Base: isvalid
+isvalid(sol::BallisticLambertsSolution) = ~any(isnan.(sol.r⃗₁))
 
 export AbstractLambertsSolution,
        MinimumEnergyLambertsSolution,

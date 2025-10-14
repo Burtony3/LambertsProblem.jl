@@ -13,10 +13,10 @@ Takes a `BallisticLambertsProblem{T}` instance `prob`, which specifies initial/f
 - `itermax`: maximum number of Householder iterations (default: 30).  
 - `tol`: convergence tolerance for the root‐finding (default: 1e-12).
 """
-function solve(prob::BallisticLambertsProblem{T}, ::Izzo; itermax::Int=30, tol::Float64=1e-12) where T<:Real
+function solve(prob::BallisticLambertsProblem{T}, ::Izzo; itermax::Int=30, tol::Float64=1e-12, silent::Bool=false) where T<:Real
 
     # Getting solution
-    _, v⃗₁, _, v⃗₂ = _izzo(prob.r⃗₁, prob.r⃗₂, prob.Δt, prob.μ, prob.revs, prob.retrograde, prob.longway, itermax, tol)
+    _, v⃗₁, _, v⃗₂ = _izzo(prob.r⃗₁, prob.r⃗₂, prob.Δt, prob.μ, prob.revs, prob.retrograde, prob.longway, itermax, tol, silent)
 
     # TODO: Calculate error
     Δtₑ = 0.0
@@ -60,7 +60,8 @@ function _izzo(
     retrograde::Bool,
     longway::Bool,
     maxiters::Int, 
-    tol::Real
+    tol::Real,
+    silent::Bool,
     )
 
     # Non-dimensionalizing
@@ -81,7 +82,11 @@ function _izzo(
 
     # Doing some checks
     # https://github.com/poliastro/poliastro/blob/21fd7719e89a7d22b4eac63141a60a7f1b01768c/src/poliastro/core/iod.py#L284
-    @assert revs <= floor(T/π) "Input revolutions is more than the max possible: $(floor(T/π))"
+    if revs > floor(T/π) 
+        if ~silent; @warn "Input revolutions is more than the max possible: $(floor(T/π))"; end
+        out = SA[NaN, NaN, NaN]
+        return out, out, out, out
+    end
 
     # Getting initial condition and root solving
     x₀ = _izzo_ic(T, λ, revs, longway)
